@@ -1,0 +1,4 @@
+ID клиента: 42
+ФИО: laksmnd alskdmnla akjsasdadadadadadadadadadada
+Дата рождения: 18.02.2003
+Серия и номер паспорта: 1231-289383
