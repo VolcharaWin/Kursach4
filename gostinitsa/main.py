@@ -3,7 +3,6 @@ import sys
 from PyQt6 import QtWidgets
 from test import Ui_MainWindow  # Импортируем сгенерированный класс интерфейса
 
-
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
@@ -13,6 +12,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.connection = self.connect_to_database()
     def setup_connections(self):
         self.ui.add_client_push_button.clicked.connect(self.add_client)
+
     def connect_to_database(self):
         try:
             connection = psycopg2.connect(
@@ -29,7 +29,6 @@ class MainWindow(QtWidgets.QMainWindow):
             return None
 
     def add_client(self):
-
         if self.connection is None:
             print("Нет соединения с базой данных")
             return
@@ -42,7 +41,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if not all([client_id, client_bd, client_pass, client_fio]):
             blank_error = QtWidgets.QMessageBox(self)
             blank_error.setText("Заполните все поля!")
-            blank_button = blank_error.exec()
+            blank_error.exec()
             print("Не все поля заполнены. Заполните все поля!")
             return
         """# Открываем файл для записи и записываем данные
@@ -64,7 +63,7 @@ class MainWindow(QtWidgets.QMainWindow):
         except(Exception, psycopg2.Error) as error:
             print("Ошибка при добавлении клиента в базу данных: ", error)
             self.connection.rollback()
-         # Очистка полей после записи
+        # Очистка полей после записи
         self.ui.clientid_line.clear()
         self.ui.clientfio_line.clear()
         self.ui.clientbd_line.clear()
