@@ -67,7 +67,7 @@ class LogInWindow(QWidget):
                 host=HOST,
                 port=PORT
             )
-            QMessageBox.information(self, 'Успех', f'Успешное подключение к базе данных')
+            #QMessageBox.information(self, 'Успех', f'Успешное подключение к базе данных')
             print("Успешное подключение к базе данных")
 
             self.connection_successful.emit(connection)
@@ -75,5 +75,5 @@ class LogInWindow(QWidget):
             return connection
         except (Exception, psycopg2.Error) as error:
             QMessageBox.critical(self, 'Ошибка', f'Ошибка подключения к базе данных{error}')
-            print("Ошибка подключения к базе данных: ")
+            print(f"Ошибка подключения к базе данных: {error}")
             return None
