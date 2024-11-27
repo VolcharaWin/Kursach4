@@ -1,19 +1,23 @@
-import sys, psycopg2
-from PyQt6 import QtWidgets, QtCore
+import sys
+from PyQt6 import QtCore
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QLineEdit, \
-    QGridLayout, QPushButton, QHBoxLayout, QMessageBox, QTableWidgetItem, QTableView, QTableWidget
+    QGridLayout, QPushButton, QHBoxLayout, QTableWidget
+from util_funcs import add_everything, show_everything
 
 
-class add_client_window(QWidget):
-
+class AddClientWindow(QWidget):
+    window_closed = pyqtSignal()
     def __init__(self, connection):
         super().__init__()
         self.connection = connection
+        self.init_ui()
 
+    def init_ui(self):
         #self.setGeometry(100, 100, 600, 400)
         self.setWindowTitle('Добавление клиента')
         self.add_number = QLabel(self)
-        self.add_number.setText('id клиента')
+        self.add_number.setText('id')
 
         self.add_fio = QLabel(self)
         self.add_fio.setText('ФИО клиента')
@@ -22,16 +26,13 @@ class add_client_window(QWidget):
         self.add_bd.setText('День рождения клиента')
 
         self.add_pass = QLabel(self)
-        self.add_pass.setText('Паспорт клиента')
+        self.add_pass.setText('Серия и номер')
 
         self.add_button = QPushButton("Добавить")
         self.add_button.clicked.connect(self.add_client)
 
         self.back_button = QPushButton("Назад")
         self.back_button.clicked.connect(self.close)
-
-        self.update_button = QPushButton("Обновить таблицу")
-        self.update_button.clicked.connect(self.show_clients)
 
         self.add_number_line = QLineEdit(self)
         self.add_fio_line = QLineEdit(self)
@@ -56,9 +57,8 @@ class add_client_window(QWidget):
 
         #Расположение для кнопок
         button_layout = QHBoxLayout()
-        button_layout.addWidget(self.back_button)
-        button_layout.addWidget(self.update_button)
-        button_layout.addWidget(self.add_button)
+        button_layout.addWidget(self.back_button, alignment = QtCore.Qt.AlignmentFlag.AlignLeft)
+        button_layout.addWidget(self.add_button, alignment = QtCore.Qt.AlignmentFlag.AlignRight)
 
         #Главный вертикальный виджет
         main_layout = QVBoxLayout()
@@ -71,58 +71,39 @@ class add_client_window(QWidget):
         self.resize(435, 400)
         self.show_clients()
     def show_clients(self):
-        cursor = self.connection.cursor()
-        try:
-            cursor.execute("SELECT * FROM clienti ORDER BY clientid ASC")
-            rows = cursor.fetchall()
-            colnames = [desc[0] for desc in cursor.description]
-
-            self.table_clients.setRowCount(len(rows))
-            self.table_clients.setColumnCount(len(colnames))
-            self.table_clients.setHorizontalHeaderLabels(colnames)
-
-            self.table_clients.verticalHeader().setVisible(False)
-            for row_idx, row_data in enumerate(rows):
-                for col_idx, col_data in enumerate(row_data):
-                    self.table_clients.setItem(row_idx, col_idx, QTableWidgetItem(str(col_data)))
-            cursor.close()
-        except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Произошла ошибка при выводе клиентов: {e}")
-            cursor.close()
-            self.connection.rollback()
+        show_query = "SELECT * FROM clienti ORDER BY clientid ASC"
+        show_everything(
+            self=self,
+            connection=self.connection,
+            table_widget=self.table_clients,
+            sql_query=show_query
+        )
     def add_client(self):
-        client_id = self.add_number_line.text()
-        client_fio = self.add_fio_line.text()
-        client_bd = self.add_bd_line.text()
-        client_pass = self.add_pass_line.text()
-
-        if not all([client_id, client_bd, client_pass, client_fio]):
-            QMessageBox.critical(self, "Ошибка", "Заполните все поля")
-            return
-        try:
-            cursor = self.connection.cursor()
-            insert_query = """
+        input_fields = {
+            'clientid': self.add_number_line,
+            'clientfio': self.add_fio_line,
+            'clientbd': self.add_bd_line,
+            'clientpass': self.add_pass_line
+        }
+        insert_query = """
                 INSERT INTO clienti (clientid, clientfio, clientbd, clientpass)
                 VALUES (%s, %s, %s, %s)            
             """
-            cursor.execute(insert_query, (client_id, client_fio, client_bd, client_pass))
-            self.connection.commit()
-            cursor.close()
-            QMessageBox.information(self, "Успех", "Клиент был успешно добавлен")
-            print("Данные успешно добавлены в базу данных!")
-        except(Exception, psycopg2.Error) as error:
-            QMessageBox.critical(self, "Ошибка", f"Ошибка при добавлении клиента: {error}")
-            print("Ошибка при добавлении клиента в базу данных: ", error)
-            self.connection.rollback()
-        # Очистка полей после записи
-        client_id = self.add_number_line.clear()
-        client_fio = self.add_fio_line.clear()
-        client_bd = self.add_bd_line.clear()
-        client_pass = self.add_pass_line.clear()
-
+        add_everything(
+            self=self,
+            connection=self.connection,
+            input_fields=input_fields,
+            sql_query=insert_query,
+            success_message="Клиент был успешно добавлен!",
+            error_message="Ошибка при добавлении клиента!"
+        )
+        self.show_clients()
+    def closeEvent(self, event):
+        self.window_closed.emit()
+        super().closeEvent(event)
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    myApp = add_client_window()
+    myApp = AddClientWindow()
     myApp.show()
     sys.exit(app.exec())
 

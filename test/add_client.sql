@@ -1,1 +1,0 @@
-INSERT INTO clienti VALUES(%s, %s, %s, %s)
